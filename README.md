@@ -65,6 +65,22 @@ Run the frontend server:npm run dev
 Open http://localhost:3000 in your browser.
 
 
+SCREENSHOTS
+![login](screenshots/login-page.png)
+
+![customer](screenshots/customer-page.png)
+
+![PinnedMedicines](screenshots/pinned-medicines.png)
+
+![salesman](screenshots/salesman-page.png)
+
+![Admin](screenshots/admin-page.png)
+
+![AdminOverview](screenshots/AdminOverview-page.png)
+
+![adminstaff](screenshots/adminstaff-page.png)
+
+
 Test the Application:
 
 Register a user (e.g., username: admin, password: admin123, role: admin).
