@@ -71,18 +71,9 @@ Register a user (e.g., username: admin, password: admin123, role: admin).
 Log in and test features like adding medicines, processing sales, or pinning items.
 
 
-
 Screenshots
-Login Page
-Login page for user authentication.
-Admin Dashboard
-Admin dashboard showing medicine and sales management.
-Sales Chart
-Bar chart displaying cash vs. online sales totals in the Sales Management section.
-Medicine Catalog
-Customer interface for browsing the medicine catalog.
-Pinned Items
-Customer pinned items view for quick access to frequently needed medicines.
+the screenshots can be viewed in screenshot folder available in root directory.
+
 Deployment
 
 Backend (Render):
