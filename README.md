@@ -66,18 +66,25 @@ Open http://localhost:3000 in your browser.
 
 
 SCREENSHOTS
+*LOGIN PAGE*
 ![login](screenshots/login-page.png)
 
+*CUSTOMER PAGE*
 ![customer](screenshots/customer-page.png)
 
+*PINNED MEDICINES*
 ![PinnedMedicines](screenshots/pinned-medicines.png)
 
+*SALESMAN PAGE*
 ![salesman](screenshots/salesman-page.png)
 
+*ADMIN PAGE*
 ![Admin](screenshots/admin-page.png)
 
+*ADMIN OVERVIEW*
 ![AdminOverview](screenshots/AdminOverview-page.png)
 
+*ADMIN STAFF*
 ![adminstaff](screenshots/adminstaff-page.png)
 
 
