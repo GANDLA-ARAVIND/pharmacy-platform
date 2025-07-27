@@ -1,0 +1,3657 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect, createContext, useContext, type ReactNode } from "react"
+import {
+  Search,
+  UserIcon,
+  LogOut,
+  Package,
+  Users,
+  BarChart3,
+  AlertTriangle,
+  Plus,
+  Edit,
+  Trash2,
+  Check,
+  X,
+  Home,
+  Pill,
+  ShoppingBag,
+  FileText,
+  UserCheck,
+  Download,
+  ChevronDown,
+  Settings,
+  Pin,
+  MapPin,
+  Printer,
+  History,
+  CreditCard,
+  Banknote,
+  Database,
+  TrendingUp,
+  Activity,
+  Menu,
+  Save,
+  Eye,
+  EyeOff,
+  Mail,
+  Building,
+  Bell,
+  Palette,
+  Key,
+  Shield,
+  FileBarChart,
+  HardDrive,
+  Globe,
+  Scan,
+  Languages,
+  Calendar,
+  Phone,
+  Clock,
+  DollarSign,
+  GraduationCap,
+} from "lucide-react"
+
+// Types
+interface UserType {
+  id: string
+  name: string
+  email: string
+  role: "admin" | "salesman" | "customer"
+  phone?: string
+  address?: string
+}
+
+interface Medicine {
+  id: string
+  name: string
+  price: number
+  stock: number
+  description: string
+  category: string
+  type: "tablet" | "syrup" | "gel" | "capsule" | "injection" | "drops" | "cream" | "powder"
+  image?: string
+  expiryDate: string
+  location: string
+}
+
+interface PinnedItem extends Medicine {
+  quantity: number
+}
+
+interface Sale {
+  id: string
+  items: PinnedItem[]
+  total: number
+  date: string
+  time: string
+  salesman: string
+  customerName: string
+  customerPhone: string
+  paymentType: "cash" | "online"
+}
+
+interface Staff {
+  id: string
+  name: string
+  email: string
+  role: "admin" | "salesman"
+  joinDate: string
+  salary: number
+  qualification: string
+  phone: string
+  address: string
+  lastSalaryDate: string
+}
+
+// Context
+interface AuthContextType {
+  user: UserType | null
+  login: (email: string, password: string, role: string) => Promise<boolean>
+  register: (name: string, email: string, password: string) => Promise<boolean>
+  logout: () => void
+  updateProfile: (userData: Partial<UserType>) => void
+}
+
+interface AppContextType {
+  currentPage: string
+  setCurrentPage: (page: string) => void
+  isMobile: boolean
+}
+
+const AuthContext = createContext<AuthContextType | null>(null)
+const AppContext = createContext<AppContextType | null>(null)
+
+// Mock Data
+const mockMedicines: Medicine[] = [
+  {
+    id: "1",
+    name: "Paracetamol",
+    price: 45.99,
+    stock: 100,
+    description: "Pain reliever and fever reducer",
+    category: "Pain Relief",
+    type: "tablet",
+    expiryDate: "2024-12-31",
+    location: "Shelf A1, Row 2",
+  },
+  {
+    id: "2",
+    name: "Ibuprofen Syrup",
+    price: 89.99,
+    stock: 75,
+    description: "Anti-inflammatory medication",
+    category: "Pain Relief",
+    type: "syrup",
+    expiryDate: "2024-06-15",
+    location: "Shelf A1, Row 3",
+  },
+  {
+    id: "3",
+    name: "Amoxicillin",
+    price: 129.99,
+    stock: 50,
+    description: "Antibiotic medication",
+    category: "Antibiotics",
+    type: "capsule",
+    expiryDate: "2024-03-20",
+    location: "Shelf B2, Row 1",
+  },
+  {
+    id: "4",
+    name: "Vitamin C",
+    price: 159.99,
+    stock: 200,
+    description: "Immune system support",
+    category: "Vitamins",
+    type: "tablet",
+    expiryDate: "2025-01-15",
+    location: "Shelf C1, Row 4",
+  },
+  {
+    id: "5",
+    name: "Aspirin",
+    price: 69.99,
+    stock: 120,
+    description: "Blood thinner and pain reliever",
+    category: "Pain Relief",
+    type: "tablet",
+    expiryDate: "2024-02-28",
+    location: "Shelf A2, Row 1",
+  },
+]
+
+const mockUsers: UserType[] = [
+  {
+    id: "1",
+    name: "Admin User",
+    email: "admin@pharmacy.com",
+    role: "admin",
+    phone: "+91 9876543210",
+    address: "123 Admin Street, City",
+  },
+  {
+    id: "2",
+    name: "John Salesman",
+    email: "salesman@pharmacy.com",
+    role: "salesman",
+    phone: "+91 9876543211",
+    address: "456 Sales Avenue, City",
+  },
+  {
+    id: "3",
+    name: "Jane Customer",
+    email: "customer@pharmacy.com",
+    role: "customer",
+    phone: "+91 9876543212",
+    address: "789 Customer Lane, City",
+  },
+]
+
+const mockStaff: Staff[] = [
+  {
+    id: "1",
+    name: "John Salesman",
+    email: "john@pharmacy.com",
+    role: "salesman",
+    joinDate: "2023-01-15",
+    salary: 25000,
+    qualification: "B.Pharm",
+    phone: "+91 9876543210",
+    address: "456 Sales Avenue, Medical District, City - 560002",
+    lastSalaryDate: "2024-01-01",
+  },
+  {
+    id: "2",
+    name: "Sarah Manager",
+    email: "sarah@pharmacy.com",
+    role: "admin",
+    joinDate: "2022-06-10",
+    salary: 45000,
+    qualification: "M.Pharm, MBA",
+    phone: "+91 9876543211",
+    address: "789 Manager Street, Business District, City - 560003",
+    lastSalaryDate: "2023-12-01",
+  },
+]
+
+// Mock sales history
+const mockSalesHistory: Sale[] = [
+  {
+    id: "1",
+    items: [{ ...mockMedicines[0], quantity: 2 }],
+    total: 91.98,
+    date: "2024-01-15",
+    time: "10:30 AM",
+    salesman: "John Salesman",
+    customerName: "Rajesh Kumar",
+    customerPhone: "+91 9876543213",
+    paymentType: "cash",
+  },
+  {
+    id: "2",
+    items: [
+      { ...mockMedicines[1], quantity: 1 },
+      { ...mockMedicines[4], quantity: 3 },
+    ],
+    total: 299.96,
+    date: "2024-01-16",
+    time: "2:15 PM",
+    salesman: "John Salesman",
+    customerName: "Priya Sharma",
+    customerPhone: "+91 9876543214",
+    paymentType: "online",
+  },
+  {
+    id: "3",
+    items: [{ ...mockMedicines[2], quantity: 1 }],
+    total: 129.99,
+    date: "2024-01-17",
+    time: "11:45 AM",
+    salesman: "Sarah Manager",
+    customerName: "Amit Patel",
+    customerPhone: "+91 9876543215",
+    paymentType: "cash",
+  },
+]
+
+// Shop Information
+const SHOP_INFO = {
+  name: "PharmaCare Medical Store",
+  address: "123 Health Street, Medical District, City - 560001",
+  phone: "+91 9876543210",
+  email: "info@pharmacare.com",
+  hours: "Mon-Sat: 8:00 AM - 10:00 PM, Sun: 9:00 AM - 9:00 PM",
+}
+
+// Settings Options with icons and handlers
+const ADMIN_SETTINGS = [
+  { id: "profile", label: "👤 Profile Settings", icon: UserIcon },
+  { id: "pharmacy-address", label: "📍 Pharmacy Address Settings", icon: Building },
+  { id: "expiry-alerts", label: "🔔 Expiry Alert Preferences", icon: Bell },
+  { id: "sales-reports", label: "📊 Sales Reports Export", icon: FileBarChart },
+  { id: "backup-restore", label: "💾 Backup & Restore Data", icon: HardDrive },
+  { id: "roles-permissions", label: "👥 Manage Roles & Permissions", icon: Shield },
+  { id: "billing-template", label: "🧾 Billing Template Settings", icon: FileText },
+  { id: "api-keys", label: "🌐 API Access Keys", icon: Globe },
+  { id: "theme", label: "🎨 Theme Preferences", icon: Palette },
+  { id: "change-password", label: "🔒 Change Password", icon: Key },
+  { id: "logout", label: "🚪 Logout", icon: LogOut },
+]
+
+const SALESMAN_SETTINGS = [
+  { id: "profile", label: "👤 Profile Settings", icon: UserIcon },
+  { id: "view-address", label: "📍 View Pharmacy Address", icon: MapPin },
+  { id: "inventory-access", label: "📦 Quick Inventory Access", icon: Package },
+  { id: "bill-format", label: "🧾 Bill Format Settings", icon: FileText },
+  { id: "barcode-scanner", label: "📱 Barcode Scanner Toggle", icon: Scan },
+  { id: "print-preferences", label: "🖨️ Print Preferences", icon: Printer },
+  { id: "sell-notifications", label: "🔔 Sell Notifications", icon: Bell },
+  { id: "change-password", label: "🔒 Change Password", icon: Key },
+  { id: "logout", label: "🚪 Logout", icon: LogOut },
+]
+
+const CUSTOMER_SETTINGS = [
+  { id: "profile", label: "👤 Profile Settings", icon: UserIcon },
+  { id: "view-address", label: "📍 View Pharmacy Address", icon: MapPin },
+  { id: "saved-pins", label: "📌 Saved Pin Items", icon: Pin },
+  { id: "purchase-history", label: "📊 Purchase History", icon: History },
+  { id: "alert-preferences", label: "🔔 Alert Preferences", icon: Bell },
+  { id: "language-theme", label: "🌐 Language & Theme", icon: Languages },
+  { id: "change-password", label: "🔒 Change Password", icon: Key },
+  { id: "logout", label: "🚪 Logout", icon: LogOut },
+]
+
+// Auth Provider
+function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<UserType | null>(null)
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("pharmacy_user")
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+  }, [])
+
+  const login = async (email: string, password: string, role: string): Promise<boolean> => {
+    // Mock API call
+    const foundUser = mockUsers.find((u) => u.email === email && u.role === role)
+    if (foundUser) {
+      setUser(foundUser)
+      localStorage.setItem("pharmacy_user", JSON.stringify(foundUser))
+      return true
+    }
+    return false
+  }
+
+  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+    // Mock API call
+    const newUser: UserType = {
+      id: Date.now().toString(),
+      name,
+      email,
+      role: "customer",
+    }
+    setUser(newUser)
+    localStorage.setItem("pharmacy_user", JSON.stringify(newUser))
+    return true
+  }
+
+  const updateProfile = (userData: Partial<UserType>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData }
+      setUser(updatedUser)
+      localStorage.setItem("pharmacy_user", JSON.stringify(updatedUser))
+    }
+  }
+
+  const logout = () => {
+    setUser(null)
+    localStorage.removeItem("pharmacy_user")
+    localStorage.removeItem("pharmacy_pinned")
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, updateProfile }}>{children}</AuthContext.Provider>
+  )
+}
+
+// App Context Provider
+function AppProvider({ children }: { children: ReactNode }) {
+  const [currentPage, setCurrentPage] = useState("/")
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  return <AppContext.Provider value={{ currentPage, setCurrentPage, isMobile }}>{children}</AppContext.Provider>
+}
+
+// Custom Hooks
+function useAuth() {
+  const context = useContext(AuthContext)
+  if (!context) throw new Error("useAuth must be used within AuthProvider")
+  return context
+}
+
+function useApp() {
+  const context = useContext(AppContext)
+  if (!context) throw new Error("useApp must be used within AppProvider")
+  return context
+}
+
+// Components
+function Button({ children, variant = "primary", size = "md", className = "", ...props }: any) {
+  const baseClasses =
+    "font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+  const variants = {
+    primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg",
+    secondary: "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    danger: "bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg",
+    success: "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg",
+  }
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2",
+    lg: "px-6 py-3 text-lg",
+  }
+
+  return (
+    <button className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
+      {children}
+    </button>
+  )
+}
+
+function Input({ className = "", ...props }: any) {
+  return (
+    <input
+      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${className}`}
+      {...props}
+    />
+  )
+}
+
+function Card({ children, className = "" }: any) {
+  return (
+    <div
+      className={`bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-200 hover:shadow-xl ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+function Modal({ isOpen, onClose, title, children, size = "md" }: any) {
+  if (!isOpen) return null
+
+  const sizeClasses = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div
+        className={`bg-white rounded-xl ${sizeClasses[size]} w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200`}
+      >
+        <div className="flex justify-between items-center p-4 md:p-6 border-b">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800">{title}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-4 md:p-6">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+// Profile Modal Component
+function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { user, updateProfile } = useAuth()
+  const [formData, setFormData] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    address: user?.address || "",
+  })
+  const [isEditing, setIsEditing] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "",
+        address: user.address || "",
+      })
+    }
+  }, [user])
+
+  const handleSave = () => {
+    updateProfile(formData)
+    setIsEditing(false)
+    alert("Profile updated successfully!")
+  }
+
+  if (!user) return null
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Profile Settings" size="lg">
+      <div className="space-y-6">
+        <div className="flex items-center justify-center mb-6">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+            <UserIcon className="text-blue-600" size={32} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            {isEditing ? (
+              <Input value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} />
+            ) : (
+              <p className="px-3 py-2 bg-gray-50 rounded-lg">{formData.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            {isEditing ? (
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
+              />
+            ) : (
+              <p className="px-3 py-2 bg-gray-50 rounded-lg">{formData.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+            {isEditing ? (
+              <Input
+                type="tel"
+                value={formData.phone}
+                onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            ) : (
+              <p className="px-3 py-2 bg-gray-50 rounded-lg">{formData.phone || "Not provided"}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <p className="px-3 py-2 bg-gray-50 rounded-lg capitalize">{user.role}</p>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+          {isEditing ? (
+            <textarea
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+            />
+          ) : (
+            <p className="px-3 py-2 bg-gray-50 rounded-lg">{formData.address || "Not provided"}</p>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4 border-t">
+          {isEditing ? (
+            <>
+              <Button variant="secondary" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>
+                <Save size={16} className="mr-2" />
+                Save Changes
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => setIsEditing(true)}>
+              <Edit size={16} className="mr-2" />
+              Edit Profile
+            </Button>
+          )}
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// Settings Modal Component
+function SettingsModal({ isOpen, onClose, userRole }: { isOpen: boolean; onClose: () => void; userRole: string }) {
+  const { logout } = useAuth()
+  const { setCurrentPage } = useApp()
+  const [activeSettingModal, setActiveSettingModal] = useState<string | null>(null)
+
+  const getSettingsOptions = () => {
+    switch (userRole) {
+      case "admin":
+        return ADMIN_SETTINGS
+      case "salesman":
+        return SALESMAN_SETTINGS
+      case "customer":
+        return CUSTOMER_SETTINGS
+      default:
+        return []
+    }
+  }
+
+  const handleSettingClick = (settingId: string) => {
+    switch (settingId) {
+      case "logout":
+        logout()
+        onClose()
+        break
+      case "profile":
+        setActiveSettingModal("profile")
+        break
+      case "view-address":
+      case "pharmacy-address":
+        setActiveSettingModal("pharmacy-address")
+        break
+      case "saved-pins":
+        setCurrentPage("/pinned")
+        onClose()
+        break
+      case "purchase-history":
+        // For customers, this could show their purchase history
+        alert("Purchase History - Feature coming soon!")
+        break
+      case "inventory-access":
+        setCurrentPage("/admin/medicines")
+        onClose()
+        break
+      case "change-password":
+        setActiveSettingModal("change-password")
+        break
+      case "theme":
+      case "language-theme":
+        setActiveSettingModal("theme")
+        break
+      case "expiry-alerts":
+      case "alert-preferences":
+        setActiveSettingModal("alerts")
+        break
+      case "sales-reports":
+        setActiveSettingModal("sales-reports")
+        break
+      case "backup-restore":
+        setActiveSettingModal("backup-restore")
+        break
+      case "roles-permissions":
+        setActiveSettingModal("roles-permissions")
+        break
+      case "billing-template":
+      case "bill-format":
+        setActiveSettingModal("billing-template")
+        break
+      case "api-keys":
+        setActiveSettingModal("api-keys")
+        break
+      case "barcode-scanner":
+        setActiveSettingModal("barcode-scanner")
+        break
+      case "print-preferences":
+        setActiveSettingModal("print-preferences")
+        break
+      case "sell-notifications":
+        setActiveSettingModal("sell-notifications")
+        break
+      default:
+        alert(`${settingId} - Feature coming soon!`)
+    }
+  }
+
+  return (
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title="Settings" size="lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {getSettingsOptions().map((setting) => {
+            const Icon = setting.icon
+            return (
+              <button
+                key={setting.id}
+                onClick={() => handleSettingClick(setting.id)}
+                className={`flex items-center space-x-3 w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors ${
+                  setting.id === "logout" ? "text-red-600 hover:bg-red-50" : "text-gray-700"
+                }`}
+              >
+                <Icon size={18} />
+                <span className="text-sm md:text-base">{setting.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
+
+      {/* Sub-modals for different settings */}
+      <PharmacyAddressModal
+        isOpen={activeSettingModal === "pharmacy-address"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <ChangePasswordModal
+        isOpen={activeSettingModal === "change-password"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <ThemeModal isOpen={activeSettingModal === "theme"} onClose={() => setActiveSettingModal(null)} />
+      <AlertsModal isOpen={activeSettingModal === "alerts"} onClose={() => setActiveSettingModal(null)} />
+      <SalesReportsModal isOpen={activeSettingModal === "sales-reports"} onClose={() => setActiveSettingModal(null)} />
+      <BackupRestoreModal
+        isOpen={activeSettingModal === "backup-restore"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <RolesPermissionsModal
+        isOpen={activeSettingModal === "roles-permissions"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <BillingTemplateModal
+        isOpen={activeSettingModal === "billing-template"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <ApiKeysModal isOpen={activeSettingModal === "api-keys"} onClose={() => setActiveSettingModal(null)} />
+      <BarcodeScannerModal
+        isOpen={activeSettingModal === "barcode-scanner"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <PrintPreferencesModal
+        isOpen={activeSettingModal === "print-preferences"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+      <SellNotificationsModal
+        isOpen={activeSettingModal === "sell-notifications"}
+        onClose={() => setActiveSettingModal(null)}
+      />
+    </>
+  )
+}
+
+// Individual Setting Modals
+function PharmacyAddressModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Pharmacy Address" size="lg">
+      <div className="space-y-4">
+        <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
+          <Building className="text-blue-600 mt-1" size={20} />
+          <div>
+            <h3 className="font-semibold text-blue-800">{SHOP_INFO.name}</h3>
+            <p className="text-blue-700 mt-1">{SHOP_INFO.address}</p>
+            <p className="text-blue-600 text-sm mt-2">📞 {SHOP_INFO.phone}</p>
+            <p className="text-blue-600 text-sm">📧 {SHOP_INFO.email}</p>
+            <p className="text-blue-600 text-sm">🕒 {SHOP_INFO.hours}</p>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (formData.newPassword !== formData.confirmPassword) {
+      alert("New passwords don't match!")
+      return
+    }
+    alert("Password changed successfully!")
+    onClose()
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Change Password" size="lg">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+          <div className="relative">
+            <Input
+              type={showPasswords.current ? "text" : "password"}
+              value={formData.currentPassword}
+              onChange={(e: any) => setFormData({ ...formData, currentPassword: e.target.value })}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            >
+              {showPasswords.current ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+          <div className="relative">
+            <Input
+              type={showPasswords.new ? "text" : "password"}
+              value={formData.newPassword}
+              onChange={(e: any) => setFormData({ ...formData, newPassword: e.target.value })}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            >
+              {showPasswords.new ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+          <div className="relative">
+            <Input
+              type={showPasswords.confirm ? "text" : "password"}
+              value={formData.confirmPassword}
+              onChange={(e: any) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            >
+              {showPasswords.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">Change Password</Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function ThemeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [selectedTheme, setSelectedTheme] = useState("light")
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Theme Preferences" size="lg">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            onClick={() => setSelectedTheme("light")}
+            className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+              selectedTheme === "light" ? "border-blue-500 bg-blue-50" : "border-gray-200"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white border rounded shadow-sm"></div>
+              <span className="font-medium">Light Theme</span>
+            </div>
+          </div>
+          <div
+            onClick={() => setSelectedTheme("dark")}
+            className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+              selectedTheme === "dark" ? "border-blue-500 bg-blue-50" : "border-gray-200"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gray-800 border rounded shadow-sm"></div>
+              <span className="font-medium">Dark Theme</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Theme applied!")
+              onClose()
+            }}
+          >
+            Apply Theme
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function AlertsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [alertSettings, setAlertSettings] = useState({
+    lowStock: true,
+    expiry: true,
+    sales: false,
+    salary: true,
+  })
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Alert Preferences" size="lg">
+      <div className="space-y-4">
+        {Object.entries(alertSettings).map(([key, value]) => (
+          <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span className="font-medium capitalize">{key.replace(/([A-Z])/g, " $1")} Alerts</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={value}
+                onChange={(e) => setAlertSettings({ ...alertSettings, [key]: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        ))}
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Alert preferences saved!")
+              onClose()
+            }}
+          >
+            Save Preferences
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function SalesReportsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Sales Reports Export" size="lg">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Button className="flex items-center justify-center space-x-2">
+            <Download size={16} />
+            <span>Export CSV</span>
+          </Button>
+          <Button className="flex items-center justify-center space-x-2">
+            <Download size={16} />
+            <span>Export PDF</span>
+          </Button>
+          <Button className="flex items-center justify-center space-x-2">
+            <Download size={16} />
+            <span>Export Excel</span>
+          </Button>
+          <Button className="flex items-center justify-center space-x-2">
+            <Mail size={16} />
+            <span>Email Report</span>
+          </Button>
+        </div>
+        <div className="flex justify-end pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function BackupRestoreModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Backup & Restore Data" size="lg">
+      <div className="space-y-4">
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800 text-sm">
+            <strong>Warning:</strong> Always backup your data before making major changes.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Button className="flex items-center justify-center space-x-2">
+            <HardDrive size={16} />
+            <span>Create Backup</span>
+          </Button>
+          <Button variant="secondary" className="flex items-center justify-center space-x-2">
+            <Download size={16} />
+            <span>Download Backup</span>
+          </Button>
+        </div>
+        <div className="border-t pt-4">
+          <h4 className="font-medium mb-2">Restore from Backup</h4>
+          <input type="file" accept=".json,.csv" className="w-full p-2 border rounded-lg" />
+          <Button className="mt-2 w-full" variant="danger">
+            Restore Data
+          </Button>
+        </div>
+        <div className="flex justify-end pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function RolesPermissionsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Manage Roles & Permissions" size="xl">
+      <div className="space-y-4">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border p-2 text-left">Permission</th>
+                <th className="border p-2">Admin</th>
+                <th className="border p-2">Salesman</th>
+                <th className="border p-2">Customer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                "View Medicines",
+                "Add Medicines",
+                "Edit Medicines",
+                "Delete Medicines",
+                "View Sales",
+                "Create Sales",
+                "View Staff",
+                "Manage Staff",
+              ].map((permission) => (
+                <tr key={permission}>
+                  <td className="border p-2 font-medium">{permission}</td>
+                  <td className="border p-2 text-center">
+                    <input type="checkbox" defaultChecked className="w-4 h-4" />
+                  </td>
+                  <td className="border p-2 text-center">
+                    <input
+                      type="checkbox"
+                      defaultChecked={permission.includes("View") || permission.includes("Create")}
+                      className="w-4 h-4"
+                    />
+                  </td>
+                  <td className="border p-2 text-center">
+                    <input type="checkbox" defaultChecked={permission === "View Medicines"} className="w-4 h-4" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Permissions updated!")
+              onClose()
+            }}
+          >
+            Save Changes
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function BillingTemplateModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Billing Template Settings" size="lg">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Header Text</label>
+          <Input defaultValue="PharmaCare Medical Store" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Footer Message</label>
+          <textarea
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={3}
+            defaultValue="Thank you for your purchase!"
+          />
+        </div>
+        <div className="flex items-center space-x-2">
+          <input type="checkbox" id="showLogo" defaultChecked />
+          <label htmlFor="showLogo" className="text-sm">
+            Show Logo on Bill
+          </label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input type="checkbox" id="showAddress" defaultChecked />
+          <label htmlFor="showAddress" className="text-sm">
+            Show Address on Bill
+          </label>
+        </div>
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Template settings saved!")
+              onClose()
+            }}
+          >
+            Save Template
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function ApiKeysModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="API Access Keys" size="lg">
+      <div className="space-y-4">
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-800 text-sm">
+            API keys allow external applications to access your pharmacy data securely.
+          </p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Current API Key</label>
+          <div className="flex space-x-2">
+            <Input value="pk_live_51234567890abcdef" readOnly />
+            <Button size="sm">Copy</Button>
+          </div>
+        </div>
+        <div className="flex justify-between">
+          <Button variant="danger">Regenerate Key</Button>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function BarcodeScannerModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [scannerEnabled, setScannerEnabled] = useState(true)
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Barcode Scanner Settings" size="lg">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <span className="font-medium">Enable Barcode Scanner</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={scannerEnabled}
+              onChange={(e) => setScannerEnabled(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Scanner Type</label>
+          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option>Camera Scanner</option>
+            <option>USB Scanner</option>
+            <option>Bluetooth Scanner</option>
+          </select>
+        </div>
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Scanner settings saved!")
+              onClose()
+            }}
+          >
+            Save Settings
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function PrintPreferencesModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Print Preferences" size="lg">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Default Printer</label>
+          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option>Thermal Printer - Receipt</option>
+            <option>Laser Printer - A4</option>
+            <option>Inkjet Printer - Letter</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Paper Size</label>
+          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option>80mm Thermal</option>
+            <option>A4</option>
+            <option>Letter</option>
+          </select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input type="checkbox" id="autoPrint" defaultChecked />
+          <label htmlFor="autoPrint" className="text-sm">
+            Auto-print after sale completion
+          </label>
+        </div>
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Print preferences saved!")
+              onClose()
+            }}
+          >
+            Save Preferences
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function SellNotificationsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [notifications, setNotifications] = useState({
+    lowStock: true,
+    saleComplete: true,
+    dailySummary: false,
+    customerReturn: true,
+  })
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Sell Notifications" size="lg">
+      <div className="space-y-4">
+        {Object.entries(notifications).map(([key, value]) => (
+          <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <span className="font-medium capitalize">{key.replace(/([A-Z])/g, " $1")} Notifications</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={value}
+                onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        ))}
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              alert("Notification preferences saved!")
+              onClose()
+            }}
+          >
+            Save Preferences
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// User Profile Dropdown
+function UserProfileDropdown() {
+  const { user, logout } = useAuth()
+  const { isMobile } = useApp()
+  const [isOpen, setIsOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  if (!user) return null
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 p-2 rounded-lg hover:bg-blue-50"
+      >
+        <UserIcon size={isMobile ? 16 : 18} />
+        {!isMobile && <span className="hidden md:block">{user.name}</span>}
+        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full capitalize">{user.role}</span>
+        <ChevronDown size={14} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+          <div className="p-3 border-b border-gray-100">
+            <div className="font-medium text-gray-800 text-sm">{user.name}</div>
+            <div className="text-xs text-gray-600 truncate">{user.email}</div>
+          </div>
+          <div className="py-2">
+            <button
+              onClick={() => {
+                setIsProfileOpen(true)
+                setIsOpen(false)
+              }}
+              className="flex items-center space-x-2 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+            >
+              <UserIcon size={14} />
+              <span>Profile</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsSettingsOpen(true)
+                setIsOpen(false)
+              }}
+              className="flex items-center space-x-2 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+            >
+              <Settings size={14} />
+              <span>Settings</span>
+            </button>
+            <hr className="my-2" />
+            <button
+              onClick={() => {
+                logout()
+                setIsOpen(false)
+              }}
+              className="flex items-center space-x-2 w-full px-3 py-2 text-left text-red-600 hover:bg-red-50 transition-colors text-sm"
+            >
+              <LogOut size={14} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} userRole={user.role} />
+    </div>
+  )
+}
+
+// Mobile Navigation Component
+function MobileNavigation() {
+  const { user } = useAuth()
+  const { currentPage, setCurrentPage } = useApp()
+  const [isOpen, setIsOpen] = useState(false)
+
+  if (!user) return null
+
+  const adminLinks = [
+    { path: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { path: "/admin/medicines", label: "Medicines", icon: Pill },
+    { path: "/admin/sales", label: "Sales", icon: FileText },
+    { path: "/admin/staff", label: "Staff", icon: Users },
+    { path: "/admin/overview", label: "Overview", icon: Database },
+  ]
+
+  const salesmanLinks = [
+    { path: "/salesman/sell", label: "Sell", icon: ShoppingBag },
+    { path: "/salesman/history", label: "History", icon: History },
+  ]
+
+  const customerLinks = [
+    { path: "/", label: "Home", icon: Home },
+    { path: "/medicines", label: "Medicines", icon: Pill },
+    { path: "/pinned", label: "Pinned", icon: Pin },
+  ]
+
+  const getLinks = () => {
+    switch (user.role) {
+      case "admin":
+        return adminLinks
+      case "salesman":
+        return salesmanLinks
+      case "customer":
+        return customerLinks
+      default:
+        return []
+    }
+  }
+
+  return (
+    <>
+      <button onClick={() => setIsOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-blue-50 text-gray-700">
+        <Menu size={20} />
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden">
+          <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center space-x-2">
+                <Pill className="text-blue-600" size={24} />
+                <span className="text-lg font-bold text-gray-800">PharmaCare</span>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="p-1">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 space-y-2">
+              {getLinks().map((link) => {
+                const Icon = link.icon
+                const isActive = currentPage === link.path
+                return (
+                  <button
+                    key={link.path}
+                    onClick={() => {
+                      setCurrentPage(link.path)
+                      setIsOpen(false)
+                    }}
+                    className={`flex items-center space-x-3 w-full px-3 py-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? "bg-blue-100 text-blue-700 shadow-sm"
+                        : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    <Icon size={18} />
+                    <span>{link.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Navigation Component
+function Navigation() {
+  const { user } = useAuth()
+  const { currentPage, setCurrentPage, isMobile } = useApp()
+
+  if (!user) return null
+
+  const adminLinks = [
+    { path: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { path: "/admin/medicines", label: "Medicines", icon: Pill },
+    { path: "/admin/sales", label: "Sales", icon: FileText },
+    { path: "/admin/staff", label: "Staff", icon: Users },
+    { path: "/admin/overview", label: "Overview", icon: Database },
+  ]
+
+  const salesmanLinks = [
+    { path: "/salesman/sell", label: "Sell", icon: ShoppingBag },
+    { path: "/salesman/history", label: "History", icon: History },
+  ]
+
+  const customerLinks = [
+    { path: "/", label: "Home", icon: Home },
+    { path: "/medicines", label: "Medicines", icon: Pill },
+    { path: "/pinned", label: "Pinned", icon: Pin },
+  ]
+
+  const getLinks = () => {
+    switch (user.role) {
+      case "admin":
+        return adminLinks
+      case "salesman":
+        return salesmanLinks
+      case "customer":
+        return customerLinks
+      default:
+        return []
+    }
+  }
+
+  return (
+    <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between items-center h-14 md:h-16">
+          <div className="flex items-center space-x-4 md:space-x-8">
+            <div className="flex items-center space-x-2">
+              <Pill className="text-blue-600" size={isMobile ? 24 : 28} />
+              <span className="text-lg md:text-xl font-bold text-gray-800">PharmaCare</span>
+            </div>
+            <div className="hidden md:flex space-x-6">
+              {getLinks().map((link) => {
+                const Icon = link.icon
+                const isActive = currentPage === link.path
+                return (
+                  <button
+                    key={link.path}
+                    onClick={() => setCurrentPage(link.path)}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? "bg-blue-100 text-blue-700 shadow-sm"
+                        : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    <Icon size={18} />
+                    <span>{link.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <MobileNavigation />
+            <UserProfileDropdown />
+          </div>
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+// Login Component
+function Login({ onPageChange }: { onPageChange: (page: string) => void }) {
+  const { login } = useAuth()
+  const { isMobile } = useApp()
+  const [formData, setFormData] = useState({ email: "", password: "", role: "customer" })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    const success = await login(formData.email, formData.password, formData.role)
+    if (!success) {
+      setError("Invalid credentials")
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-6 md:p-8">
+        <div className="text-center mb-6 md:mb-8">
+          <Pill className="mx-auto text-blue-600 mb-4" size={isMobile ? 40 : 48} />
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Welcome to PharmaCare</h1>
+          <p className="text-gray-600 mt-2 text-sm md:text-base">Sign in to your account</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <Input
+              type="password"
+              value={formData.password}
+              onChange={(e: any) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="customer">Customer</option>
+              <option value="salesman">Salesman</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          {error && <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">{error}</div>}
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
+          </Button>
+        </form>
+
+        <div className="mt-4 md:mt-6 text-center">
+          <p className="text-gray-600 text-sm md:text-base">
+            Don't have an account?{" "}
+            <button onClick={() => onPageChange("/register")} className="text-blue-600 hover:text-blue-700 font-medium">
+              Register here
+            </button>
+          </p>
+        </div>
+
+        <div className="mt-4 md:mt-6 p-3 md:p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
+          <div className="text-xs md:text-sm space-y-1">
+            <div>
+              <strong>Admin:</strong> admin@pharmacy.com
+            </div>
+            <div>
+              <strong>Salesman:</strong> salesman@pharmacy.com
+            </div>
+            <div>
+              <strong>Customer:</strong> customer@pharmacy.com
+            </div>
+            <div className="text-gray-500">Password: any</div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// Register Component
+function Register({ onPageChange }: { onPageChange: (page: string) => void }) {
+  const { register } = useAuth()
+  const { isMobile } = useApp()
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" })
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    await register(formData.name, formData.email, formData.password)
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-6 md:p-8">
+        <div className="text-center mb-6 md:mb-8">
+          <Pill className="mx-auto text-blue-600 mb-4" size={isMobile ? 40 : 48} />
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Create Account</h1>
+          <p className="text-gray-600 mt-2 text-sm md:text-base">Join PharmaCare today</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <Input
+              type="text"
+              value={formData.name}
+              onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter your full name"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <Input
+              type="password"
+              value={formData.password}
+              onChange={(e: any) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Create a password"
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Creating Account..." : "Create Account"}
+          </Button>
+        </form>
+
+        <div className="mt-4 md:mt-6 text-center">
+          <p className="text-gray-600 text-sm md:text-base">
+            Already have an account?{" "}
+            <button onClick={() => onPageChange("/login")} className="text-blue-600 hover:text-blue-700 font-medium">
+              Sign in here
+            </button>
+          </p>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// Admin Dashboard
+function AdminDashboard() {
+  const { isMobile } = useApp()
+
+  const stats = [
+    { title: "Total Medicines", value: "150", icon: Pill, color: "blue" },
+    { title: "Total Sales", value: "₹1,24,500", icon: BarChart3, color: "green" },
+    { title: "Staff Members", value: "8", icon: Users, color: "purple" },
+    { title: "Low Stock Items", value: "5", icon: Package, color: "orange" },
+  ]
+
+  // Check for expiring medicines
+  const today = new Date()
+  const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+  const expiringMedicines = mockMedicines.filter((medicine) => {
+    const expiryDate = new Date(medicine.expiryDate)
+    return expiryDate <= thirtyDaysFromNow
+  })
+
+  // Check for staff salary alerts
+  const staffSalaryAlerts = mockStaff.filter((staff) => {
+    const lastSalaryDate = new Date(staff.lastSalaryDate)
+    const oneMonthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+    return lastSalaryDate <= oneMonthAgo
+  })
+
+  const alerts = [
+    { message: "Low stock: Paracetamol (5 units left)", type: "warning" },
+    ...expiringMedicines.map((medicine) => ({
+      message: `Medicine expiring soon: ${medicine.name} (Expires: ${medicine.expiryDate})`,
+      type: "warning",
+    })),
+    ...staffSalaryAlerts.map((staff) => ({
+      message: `Salary pending for ${staff.name} (Last paid: ${staff.lastSalaryDate})`,
+      type: "warning",
+    })),
+  ]
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+        <div className="text-sm text-gray-600">
+          {new Date().toLocaleDateString("en-IN", {
+            weekday: isMobile ? "short" : "long",
+            year: "numeric",
+            month: isMobile ? "short" : "long",
+            day: "numeric",
+          })}
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon
+          return (
+            <Card key={index} className="p-4 md:p-6 hover:scale-105 transition-transform duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs md:text-sm font-medium text-gray-600">{stat.title}</p>
+                  <p className="text-lg md:text-2xl font-bold text-gray-800 mt-1">{stat.value}</p>
+                </div>
+                <div className={`p-2 md:p-3 rounded-full bg-${stat.color}-100`}>
+                  <Icon className={`text-${stat.color}-600`} size={isMobile ? 20 : 24} />
+                </div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Alerts */}
+      <Card className="p-4 md:p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <AlertTriangle className="text-red-600" size={20} />
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800">Alerts</h2>
+        </div>
+        <div className="space-y-3">
+          {alerts.map((alert, index) => (
+            <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={16} />
+              <span className="text-red-800 text-sm">{alert.message}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// Admin Overview Component
+function AdminOverview() {
+  const { isMobile } = useApp()
+  const [salesHistory] = useState<Sale[]>(() => {
+    const saved = localStorage.getItem("sales_history")
+    return saved ? JSON.parse(saved) : mockSalesHistory
+  })
+
+  const totalSales = salesHistory.reduce((sum, sale) => sum + sale.total, 0)
+  const totalTransactions = salesHistory.length
+  const averageOrder = totalTransactions > 0 ? totalSales / totalTransactions : 0
+
+  const cashSales = salesHistory.filter((sale) => sale.paymentType === "cash")
+  const onlineSales = salesHistory.filter((sale) => sale.paymentType === "online")
+
+  const cashTotal = cashSales.reduce((sum, sale) => sum + sale.total, 0)
+  const onlineTotal = onlineSales.reduce((sum, sale) => sum + sale.total, 0)
+
+  const topMedicines = mockMedicines.slice(0, 5)
+  const lowStockMedicines = mockMedicines.filter((med) => med.stock < 20)
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Complete Overview</h1>
+
+      {/* Sales Overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <TrendingUp className="text-green-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Total Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-green-600">₹{totalSales.toFixed(2)}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <Activity className="text-blue-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Transactions</p>
+              <p className="text-lg md:text-2xl font-bold text-blue-600">{totalTransactions}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <Banknote className="text-orange-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Cash Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-orange-600">₹{cashTotal.toFixed(2)}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <CreditCard className="text-purple-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Online Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-purple-600">₹{onlineTotal.toFixed(2)}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Detailed Sales Data */}
+      <Card className="p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-semibold mb-4">All Sales Data</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale ID</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Salesman</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {salesHistory.map((sale) => (
+                <tr key={sale.id} className="hover:bg-gray-50">
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm font-medium text-gray-900">#{sale.id}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{sale.date}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{sale.customerName}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{sale.customerPhone}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">
+                    {sale.items.map((item, index) => (
+                      <div key={item.id}>
+                        {item.name} ({item.type}) x{item.quantity}
+                        {index < sale.items.length - 1 && ", "}
+                      </div>
+                    ))}
+                  </td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm">
+                    <span
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        sale.paymentType === "cash" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {sale.paymentType}
+                    </span>
+                  </td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm font-semibold text-gray-900">
+                    ₹{sale.total.toFixed(2)}
+                  </td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{sale.salesman}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Medicine Inventory Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <Card className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Top Medicines</h2>
+          <div className="space-y-3">
+            {topMedicines.map((medicine) => (
+              <div key={medicine.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="font-medium text-sm md:text-base">{medicine.name}</div>
+                  <div className="text-xs md:text-sm text-gray-600">
+                    {medicine.type} - {medicine.category}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-sm md:text-base">₹{medicine.price}</div>
+                  <div className="text-xs md:text-sm text-gray-600">{medicine.stock} in stock</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Low Stock Alert</h2>
+          <div className="space-y-3">
+            {lowStockMedicines.map((medicine) => (
+              <div
+                key={medicine.id}
+                className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
+              >
+                <div>
+                  <div className="font-medium text-red-800 text-sm md:text-base">{medicine.name}</div>
+                  <div className="text-xs md:text-sm text-red-600">
+                    {medicine.type} - {medicine.location}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-red-800 text-sm md:text-base">{medicine.stock} left</div>
+                  <div className="text-xs md:text-sm text-red-600">Reorder needed</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Staff Overview */}
+      <Card className="p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-semibold mb-4">Staff Information</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Date</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Salary</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Paid</th>
+                <th className="px-2 md:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {mockStaff.map((staff) => (
+                <tr key={staff.id} className="hover:bg-gray-50">
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm font-medium text-gray-900">{staff.name}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm">
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                      {staff.role}
+                    </span>
+                  </td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{staff.joinDate}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">
+                    ₹{staff.salary.toLocaleString()}
+                  </td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{staff.lastSalaryDate}</td>
+                  <td className="px-2 md:px-4 py-4 text-xs md:text-sm text-gray-900">{staff.phone}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// Medicine Management
+function MedicineManagement() {
+  const { isMobile } = useApp()
+  const [medicines, setMedicines] = useState<Medicine[]>(mockMedicines)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null)
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    stock: "",
+    description: "",
+    category: "",
+    type: "tablet",
+    expiryDate: "",
+    location: "",
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const medicineData: Medicine = {
+      id: editingMedicine?.id || Date.now().toString(),
+      name: formData.name,
+      price: Number.parseFloat(formData.price),
+      stock: Number.parseInt(formData.stock),
+      description: formData.description,
+      category: formData.category,
+      type: formData.type as Medicine["type"],
+      expiryDate: formData.expiryDate,
+      location: formData.location,
+    }
+
+    if (editingMedicine) {
+      setMedicines(medicines.map((m) => (m.id === editingMedicine.id ? medicineData : m)))
+    } else {
+      setMedicines([...medicines, medicineData])
+    }
+
+    setIsModalOpen(false)
+    setEditingMedicine(null)
+    setFormData({
+      name: "",
+      price: "",
+      stock: "",
+      description: "",
+      category: "",
+      type: "tablet",
+      expiryDate: "",
+      location: "",
+    })
+  }
+
+  const handleEdit = (medicine: Medicine) => {
+    setEditingMedicine(medicine)
+    setFormData({
+      name: medicine.name,
+      price: medicine.price.toString(),
+      stock: medicine.stock.toString(),
+      description: medicine.description,
+      category: medicine.category,
+      type: medicine.type,
+      expiryDate: medicine.expiryDate,
+      location: medicine.location,
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    setMedicines(medicines.filter((m) => m.id !== id))
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Medicine Management</h1>
+        <Button onClick={() => setIsModalOpen(true)} size={isMobile ? "sm" : "md"}>
+          <Plus size={16} className="mr-2" />
+          Add Medicine
+        </Button>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Price
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stock
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Expiry
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Location
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {medicines.map((medicine) => (
+                <tr key={medicine.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{medicine.name}</div>
+                      <div className="text-xs md:text-sm text-gray-500">{medicine.description}</div>
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 capitalize">
+                      {medicine.type}
+                    </span>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {medicine.category}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    ₹{medicine.price}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        medicine.stock < 10 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {medicine.stock} units
+                    </span>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {medicine.expiryDate}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {medicine.location}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-medium space-x-2">
+                    <button
+                      onClick={() => handleEdit(medicine)}
+                      className="text-blue-600 hover:text-blue-900 transition-colors duration-150"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(medicine.id)}
+                      className="text-red-600 hover:text-red-900 transition-colors duration-150"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingMedicine(null)
+          setFormData({
+            name: "",
+            price: "",
+            stock: "",
+            description: "",
+            category: "",
+            type: "tablet",
+            expiryDate: "",
+            location: "",
+          })
+        }}
+        title={editingMedicine ? "Edit Medicine" : "Add Medicine"}
+        size="xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <Input
+              value={formData.name}
+              onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="tablet">Tablet</option>
+                <option value="syrup">Syrup</option>
+                <option value="gel">Gel</option>
+                <option value="capsule">Capsule</option>
+                <option value="injection">Injection</option>
+                <option value="drops">Drops</option>
+                <option value="cream">Cream</option>
+                <option value="powder">Powder</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <Input
+                value={formData.category}
+                onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e: any) => setFormData({ ...formData, price: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+              <Input
+                type="number"
+                value={formData.stock}
+                onChange={(e: any) => setFormData({ ...formData, stock: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+            <Input
+              type="date"
+              value={formData.expiryDate}
+              onChange={(e: any) => setFormData({ ...formData, expiryDate: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <Input
+              value={formData.location}
+              onChange={(e: any) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="e.g., Shelf A1, Row 2"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              required
+            />
+          </div>
+          <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3 pt-4">
+            <Button type="submit" className="flex-1">
+              {editingMedicine ? "Update" : "Add"} Medicine
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}
+
+// Customer Home
+function CustomerHome() {
+  const { setCurrentPage, isMobile } = useApp()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [medicines] = useState<Medicine[]>(mockMedicines)
+
+  const popularMedicines = medicines.slice(0, 4)
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchTerm.trim()) {
+      // Store search term for the medicines page
+      localStorage.setItem("searchTerm", searchTerm)
+      setCurrentPage("/medicines")
+    }
+  }
+
+  return (
+    <div className="space-y-6 md:space-y-8">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <h1 className="text-3xl md:text-6xl font-bold mb-4 md:mb-6">Your Health, Our Priority</h1>
+          <p className="text-lg md:text-xl mb-6 md:mb-8 opacity-90">
+            Find the medicines you need - Visit our store for collection
+          </p>
+          <div className="max-w-md mx-auto">
+            <form onSubmit={handleSearch} className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search for medicines..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-20 py-3 text-base md:text-lg text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <Button type="submit" className="absolute right-2 top-1/2 transform -translate-y-1/2" size="sm">
+                Search
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Shop Location */}
+        <Card className="p-4 md:p-6 mb-8 md:mb-12 bg-gradient-to-r from-green-50 to-blue-50">
+          <div className="flex items-start space-x-4">
+            <MapPin className="text-green-600 mt-1" size={24} />
+            <div className="flex-1">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Visit Our Store</h2>
+              <div className="space-y-2 text-gray-700">
+                <p className="font-semibold">{SHOP_INFO.name}</p>
+                <p className="text-sm md:text-base">{SHOP_INFO.address}</p>
+                <p className="text-sm md:text-base">📞 {SHOP_INFO.phone}</p>
+                <p className="text-sm md:text-base">📧 {SHOP_INFO.email}</p>
+                <p className="text-xs md:text-sm text-gray-600">🕒 {SHOP_INFO.hours}</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Popular Medicines */}
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8 text-center">Popular Medicines</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {popularMedicines.map((medicine) => (
+              <Card key={medicine.id} className="p-4 md:p-6 hover:scale-105 transition-transform duration-200">
+                <div className="text-center">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                    <Pill className="text-blue-600" size={isMobile ? 20 : 24} />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2 text-sm md:text-base">{medicine.name}</h3>
+                  <p className="text-xs text-purple-600 mb-2 capitalize">{medicine.type}</p>
+                  <p className="text-xs md:text-sm text-gray-600 mb-3 line-clamp-2">{medicine.description}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-base md:text-lg font-bold text-blue-600">₹{medicine.price}</span>
+                  </div>
+                  <Button size="sm" onClick={() => setCurrentPage("/medicines")} className="w-full">
+                    View Details
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-8 md:mb-12">
+          <div className="text-center">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="text-green-600" size={isMobile ? 20 : 24} />
+            </div>
+            <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">Quality Assured</h3>
+            <p className="text-gray-600 text-sm md:text-base">All medicines are sourced from certified manufacturers</p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPin className="text-blue-600" size={isMobile ? 20 : 24} />
+            </div>
+            <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">Easy Collection</h3>
+            <p className="text-gray-600 text-sm md:text-base">
+              Visit our conveniently located store to collect your medicines
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UserCheck className="text-purple-600" size={isMobile ? 20 : 24} />
+            </div>
+            <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">Expert Support</h3>
+            <p className="text-gray-600 text-sm md:text-base">Professional pharmacists available for consultation</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Medicine Catalog
+function MedicineCatalog() {
+  const { isMobile } = useApp()
+  const [medicines] = useState<Medicine[]>(mockMedicines)
+  const [searchTerm, setSearchTerm] = useState(() => {
+    const saved = localStorage.getItem("searchTerm")
+    localStorage.removeItem("searchTerm")
+    return saved || ""
+  })
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedType, setSelectedType] = useState("all")
+  const [pinned, setPinned] = useState<PinnedItem[]>(() => {
+    const savedPinned = localStorage.getItem("pharmacy_pinned")
+    return savedPinned ? JSON.parse(savedPinned) : []
+  })
+
+  const categories = ["all", ...Array.from(new Set(medicines.map((m) => m.category)))]
+  const types = ["all", ...Array.from(new Set(medicines.map((m) => m.type)))]
+
+  const filteredMedicines = medicines.filter((medicine) => {
+    const matchesSearch =
+      medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      medicine.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "all" || medicine.category === selectedCategory
+    const matchesType = selectedType === "all" || medicine.type === selectedType
+    return matchesSearch && matchesCategory && matchesType
+  })
+
+  const addToPin = (medicine: Medicine) => {
+    const existingItem = pinned.find((item) => item.id === medicine.id)
+    let newPinned
+
+    if (existingItem) {
+      newPinned = pinned.map((item) => (item.id === medicine.id ? { ...item, quantity: item.quantity + 1 } : item))
+      alert(`${medicine.name} quantity updated in pinned items!`)
+    } else {
+      newPinned = [...pinned, { ...medicine, quantity: 1 }]
+      alert(`${medicine.name} has been pinned successfully!`)
+    }
+
+    setPinned(newPinned)
+    localStorage.setItem("pharmacy_pinned", JSON.stringify(newPinned))
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Medicine Catalog</h1>
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Input
+              type="text"
+              placeholder="Search medicines..."
+              value={searchTerm}
+              onChange={(e: any) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category === "all" ? "All Categories" : category}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {types.map((type) => (
+                <option key={type} value={type}>
+                  {type === "all" ? "All Types" : type.charAt(0).toUpperCase() + type.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        {filteredMedicines.map((medicine) => (
+          <Card key={medicine.id} className="p-4 md:p-6 hover:shadow-xl transition-all duration-200">
+            <div className="text-center">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Pill className="text-blue-600" size={isMobile ? 24 : 28} />
+              </div>
+              <h3 className="font-semibold text-gray-800 mb-2 text-sm md:text-base">{medicine.name}</h3>
+              <p className="text-xs md:text-sm text-gray-600 mb-2">{medicine.category}</p>
+              <p className="text-xs text-purple-600 mb-2 capitalize font-medium">{medicine.type}</p>
+              <p className="text-xs text-gray-500 mb-4 line-clamp-2">{medicine.description}</p>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-lg md:text-xl font-bold text-blue-600">₹{medicine.price}</span>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    medicine.stock > 10 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {medicine.stock} in stock
+                </span>
+              </div>
+              <Button onClick={() => addToPin(medicine)} className="w-full" size="sm" disabled={medicine.stock === 0}>
+                <Pin size={14} className="mr-2" />
+                Pin Medicine
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {filteredMedicines.length === 0 && (
+        <div className="text-center py-12">
+          <Pill className="mx-auto text-gray-400 mb-4" size={48} />
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">No medicines found</h3>
+          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Pinned Medicines Component
+function PinnedComponent() {
+  const { isMobile } = useApp()
+  const [pinned, setPinned] = useState<PinnedItem[]>(() => {
+    const savedPinned = localStorage.getItem("pharmacy_pinned")
+    return savedPinned ? JSON.parse(savedPinned) : []
+  })
+
+  const updateQuantity = (id: string, quantity: number) => {
+    if (quantity === 0) {
+      const newPinned = pinned.filter((item) => item.id !== id)
+      setPinned(newPinned)
+      localStorage.setItem("pharmacy_pinned", JSON.stringify(newPinned))
+    } else {
+      const newPinned = pinned.map((item) => (item.id === id ? { ...item, quantity } : item))
+      setPinned(newPinned)
+      localStorage.setItem("pharmacy_pinned", JSON.stringify(newPinned))
+    }
+  }
+
+  const total = pinned.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  if (pinned.length === 0) {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="text-center py-12">
+          <Pin className="mx-auto text-gray-400 mb-4" size={isMobile ? 48 : 64} />
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-600 mb-2">No pinned medicines</h2>
+          <p className="text-gray-500 mb-6">Pin medicines you're interested in for easy reference</p>
+          <Button>Browse Medicines</Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Pinned Medicines</h1>
+
+      {/* Shop Location Reminder */}
+      <Card className="p-4 bg-blue-50 border-blue-200">
+        <div className="flex items-center space-x-3">
+          <MapPin className="text-blue-600" size={20} />
+          <div>
+            <p className="font-medium text-blue-800 text-sm md:text-base">Visit our store to collect these medicines</p>
+            <p className="text-xs md:text-sm text-blue-600">{SHOP_INFO.address}</p>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          {pinned.map((item) => (
+            <Card key={item.id} className="p-4 md:p-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Pill className="text-blue-600" size={isMobile ? 20 : 24} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-800 text-sm md:text-base">{item.name}</h3>
+                  <p className="text-xs text-purple-600 capitalize font-medium">{item.type}</p>
+                  <p className="text-xs md:text-sm text-gray-600 truncate">{item.description}</p>
+                  <p className="text-xs md:text-sm text-gray-500">Location: {item.location}</p>
+                  <p className="text-base md:text-lg font-bold text-blue-600">₹{item.price}</p>
+                </div>
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <button
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                    className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="w-6 md:w-8 text-center font-semibold text-sm md:text-base">{item.quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  onClick={() => updateQuantity(item.id, 0)}
+                  className="text-red-600 hover:text-red-800 transition-colors p-1"
+                >
+                  <Trash2 size={isMobile ? 16 : 20} />
+                </button>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div>
+          <Card className="p-4 md:p-6 sticky top-6">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Summary</h2>
+            <div className="space-y-3 mb-6">
+              {pinned.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="truncate mr-2">
+                    {item.name} × {item.quantity}
+                  </span>
+                  <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-4 mb-6">
+              <div className="flex justify-between text-base md:text-lg font-semibold">
+                <span>Total</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="text-xs md:text-sm text-gray-600 text-center">
+              <p>Visit our store to purchase these medicines</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Salesman Sell Component
+function SalesmanSell() {
+  const { isMobile } = useApp()
+  const [medicines] = useState<Medicine[]>(mockMedicines)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [bill, setBill] = useState<PinnedItem[]>([])
+  const [customerName, setCustomerName] = useState("")
+  const [customerPhone, setCustomerPhone] = useState("")
+  const [paymentType, setPaymentType] = useState<"cash" | "online">("cash")
+
+  const filteredMedicines = medicines.filter((medicine) =>
+    medicine.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
+  const addToBill = (medicine: Medicine, quantity = 1) => {
+    const existingItem = bill.find((item) => item.id === medicine.id)
+    if (existingItem) {
+      setBill(bill.map((item) => (item.id === medicine.id ? { ...item, quantity: item.quantity + quantity } : item)))
+    } else {
+      setBill([...bill, { ...medicine, quantity }])
+    }
+  }
+
+  const updateBillQuantity = (id: string, quantity: number) => {
+    if (quantity === 0) {
+      setBill(bill.filter((item) => item.id !== id))
+    } else {
+      setBill(bill.map((item) => (item.id === id ? { ...item, quantity } : item)))
+    }
+  }
+
+  const total = bill.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  const printBill = () => {
+    const billContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+          <h2 style="margin: 0; color: #333;">PharmaCare Medical Store</h2>
+          <p style="margin: 5px 0; font-size: 12px;">123 Health Street, Medical District, City - 560001</p>
+          <p style="margin: 5px 0; font-size: 12px;">Phone: +91 9876543210</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString("en-IN")}</p>
+          <p style="margin: 5px 0;"><strong>Time:</strong> ${new Date().toLocaleTimeString("en-IN")}</p>
+          <p style="margin: 5px 0;"><strong>Bill No:</strong> ${Date.now()}</p>
+          <p style="margin: 5px 0;"><strong>Customer:</strong> ${customerName}</p>
+          <p style="margin: 5px 0;"><strong>Phone:</strong> ${customerPhone}</p>
+          <p style="margin: 5px 0;"><strong>Payment:</strong> ${paymentType.toUpperCase()}</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="border-bottom: 1px solid #333;">
+              <th style="text-align: left; padding: 5px; font-size: 12px;">Item</th>
+              <th style="text-align: center; padding: 5px; font-size: 12px;">Type</th>
+              <th style="text-align: center; padding: 5px; font-size: 12px;">Qty</th>
+              <th style="text-align: right; padding: 5px; font-size: 12px;">Price</th>
+              <th style="text-align: right; padding: 5px; font-size: 12px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bill
+              .map(
+                (item) => `
+              <tr>
+                <td style="padding: 5px; font-size: 11px;">${item.name}</td>
+                <td style="text-align: center; padding: 5px; font-size: 11px;">${item.type}</td>
+                <td style="text-align: center; padding: 5px; font-size: 11px;">${item.quantity}</td>
+                <td style="text-align: right; padding: 5px; font-size: 11px;">₹${item.price}</td>
+                <td style="text-align: right; padding: 5px; font-size: 11px;">₹${(item.price * item.quantity).toFixed(2)}</td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+        
+        <div style="border-top: 2px solid #333; padding-top: 10px;">
+          <div style="text-align: right; font-size: 14px; font-weight: bold;">
+            <p style="margin: 5px 0;">Total: ₹${total.toFixed(2)}</p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; font-size: 10px; color: #666;">
+          <p>Thank you for your purchase!</p>
+          <p>For any queries, please contact us at info@pharmacare.com</p>
+        </div>
+      </div>
+    `
+
+    const printWindow = window.open("", "_blank")
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Bill - PharmaCare</title>
+          </head>
+          <body>
+            ${billContent}
+            <script>
+              window.onload = function() {
+                window.print();
+                window.close();
+              }
+            </script>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+    }
+  }
+
+  const completeSale = () => {
+    if (bill.length > 0 && customerName && customerPhone) {
+      // Check if online payment is confirmed
+      if (paymentType === "online") {
+        const paymentConfirmed = (document.getElementById("paymentReceived") as HTMLInputElement)?.checked
+        if (!paymentConfirmed) {
+          alert("Please confirm that online payment has been received before completing the sale.")
+          return
+        }
+      }
+
+      // Save to sales history
+      const sale: Sale = {
+        id: Date.now().toString(),
+        items: bill,
+        total,
+        date: new Date().toLocaleDateString("en-IN"),
+        time: new Date().toLocaleTimeString("en-IN"),
+        salesman: "Current User", // In real app, get from auth context
+        customerName,
+        customerPhone,
+        paymentType,
+      }
+
+      const existingHistory = JSON.parse(localStorage.getItem("sales_history") || "[]")
+      localStorage.setItem("sales_history", JSON.stringify([sale, ...existingHistory]))
+
+      printBill()
+      setBill([])
+      setCustomerName("")
+      setCustomerPhone("")
+      setPaymentType("cash")
+
+      // Reset payment confirmation checkbox
+      const paymentCheckbox = document.getElementById("paymentReceived") as HTMLInputElement
+      if (paymentCheckbox) {
+        paymentCheckbox.checked = false
+      }
+
+      alert(`Sale completed successfully! Total: ₹${total.toFixed(2)} (${paymentType.toUpperCase()})`)
+    } else {
+      alert("Please fill in customer details and add items to the bill")
+    }
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Point of Sale</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* Medicine Search */}
+        <Card className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Search Medicines</h2>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Input
+              type="text"
+              placeholder="Search medicines..."
+              value={searchTerm}
+              onChange={(e: any) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {filteredMedicines.map((medicine) => (
+              <div
+                key={medicine.id}
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-sm md:text-base">{medicine.name}</div>
+                  <div className="text-xs md:text-sm text-gray-600">
+                    ₹{medicine.price} - {medicine.type} - {medicine.location}
+                  </div>
+                  <div className="text-xs text-gray-500">Stock: {medicine.stock}</div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max={medicine.stock}
+                    defaultValue="1"
+                    className="w-16 px-2 py-1 border rounded text-center text-sm"
+                    id={`qty-${medicine.id}`}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const qtyInput = document.getElementById(`qty-${medicine.id}`) as HTMLInputElement
+                      const quantity = Number.parseInt(qtyInput.value) || 1
+                      addToBill(medicine, quantity)
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Bill */}
+        <Card className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Current Bill</h2>
+
+          {/* Customer Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+              <Input
+                type="text"
+                placeholder="Enter customer name"
+                value={customerName}
+                onChange={(e: any) => setCustomerName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <Input
+                type="tel"
+                placeholder="Enter phone number"
+                value={customerPhone}
+                onChange={(e: any) => setCustomerPhone(e.target.value)}
+                required
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Type</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="cash"
+                    checked={paymentType === "cash"}
+                    onChange={(e) => setPaymentType(e.target.value as "cash" | "online")}
+                    className="mr-2"
+                  />
+                  <Banknote size={16} className="mr-1" />
+                  Cash
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="online"
+                    checked={paymentType === "online"}
+                    onChange={(e) => setPaymentType(e.target.value as "cash" | "online")}
+                    className="mr-2"
+                  />
+                  <CreditCard size={16} className="mr-1" />
+                  Online
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Online Payment Section */}
+          {paymentType === "online" && (
+            <Card className="p-4 mb-4 bg-blue-50 border-blue-200">
+              <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                <CreditCard size={20} className="mr-2" />
+                Online Payment Options
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* UPI Payment */}
+                <div className="bg-white p-4 rounded-lg border">
+                  <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                    <Scan size={16} className="mr-2 text-green-600" />
+                    UPI Payment
+                  </h4>
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                      <div className="text-center">
+                        <Scan size={24} className="mx-auto text-gray-400 mb-1" />
+                        <p className="text-xs text-gray-500">QR Code</p>
+                        <p className="text-xs text-gray-500">Scanner</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Scan QR Code to Pay</p>
+                    <p className="text-xs text-blue-600 font-medium">UPI ID: pharmacare@upi</p>
+                  </div>
+                </div>
+
+                {/* Card Payment */}
+                <div className="bg-white p-4 rounded-lg border">
+                  <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                    <CreditCard size={16} className="mr-2 text-blue-600" />
+                    Card Payment
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="text-center p-3 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600 mb-1">Card Terminal Available</p>
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center">
+                          VISA
+                        </div>
+                        <div className="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center">
+                          MC
+                        </div>
+                        <div className="w-8 h-5 bg-orange-600 rounded text-white text-xs flex items-center justify-center">
+                          RuPay
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="sm" className="w-full" variant="secondary">
+                      <CreditCard size={14} className="mr-2" />
+                      Process Card Payment
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Instructions */}
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle size={16} className="text-yellow-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">Payment Instructions:</p>
+                    <ul className="text-xs text-yellow-700 mt-1 space-y-1">
+                      <li>• For UPI: Customer can scan the QR code with any UPI app</li>
+                      <li>• For Card: Use the card terminal for contactless/chip payments</li>
+                      <li>• Confirm payment received before completing the sale</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Confirmation */}
+              <div className="mt-4 flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="paymentReceived" className="rounded" />
+                  <label htmlFor="paymentReceived" className="text-sm font-medium text-green-800">
+                    Payment Received & Confirmed
+                  </label>
+                </div>
+                <div className="text-lg font-bold text-green-800">₹{total.toFixed(2)}</div>
+              </div>
+            </Card>
+          )}
+
+          <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+            {bill.map((item) => (
+              <div key={item.id} className="flex items-center justify-between p-2 border-b">
+                <div className="flex-1">
+                  <div className="font-medium text-sm md:text-base">{item.name}</div>
+                  <div className="text-xs md:text-sm text-gray-600">
+                    ₹{item.price} each - {item.type}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => updateBillQuantity(item.id, item.quantity - 1)}
+                    className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-semibold text-sm">{item.quantity}</span>
+                  <button
+                    onClick={() => updateBillQuantity(item.id, item.quantity + 1)}
+                    className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                  >
+                    +
+                  </button>
+                  <div className="font-semibold ml-2 text-sm">₹{(item.price * item.quantity).toFixed(2)}</div>
+                  <button
+                    onClick={() => updateBillQuantity(item.id, 0)}
+                    className="text-red-600 hover:text-red-800 ml-2"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t pt-4">
+            <div className="flex justify-between text-lg md:text-xl font-bold mb-4">
+              <span>Total:</span>
+              <span>₹{total.toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+              <Button
+                className="flex-1"
+                onClick={completeSale}
+                disabled={
+                  bill.length === 0 ||
+                  !customerName ||
+                  !customerPhone ||
+                  (paymentType === "online" && !document.getElementById("paymentReceived")?.checked)
+                }
+              >
+                Complete Sale
+              </Button>
+              <Button variant="secondary" onClick={printBill} disabled={bill.length === 0}>
+                <Printer size={16} />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Add missing components for Salesman History and other components
+function SalesmanHistory() {
+  const { isMobile } = useApp()
+  const [salesHistory, setSalesHistory] = useState<Sale[]>(() => {
+    const saved = localStorage.getItem("sales_history")
+    return saved ? JSON.parse(saved) : mockSalesHistory
+  })
+
+  const totalSales = salesHistory.reduce((sum, sale) => sum + sale.total, 0)
+  const todaysSales = salesHistory.filter((sale) => sale.date === new Date().toLocaleDateString("en-IN"))
+  const todaysTotal = todaysSales.reduce((sum, sale) => sum + sale.total, 0)
+  const cashSales = salesHistory.filter((sale) => sale.paymentType === "cash")
+  const onlineSales = salesHistory.filter((sale) => sale.paymentType === "online")
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Sales History</h1>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <BarChart3 className="text-green-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Total Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-green-600">₹{totalSales.toFixed(2)}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <Calendar className="text-blue-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Today's Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-blue-600">₹{todaysTotal.toFixed(2)}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <Banknote className="text-orange-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Cash Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-orange-600">{cashSales.length}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <div className="flex items-center space-x-3">
+            <CreditCard className="text-purple-600" size={isMobile ? 20 : 24} />
+            <div>
+              <p className="text-xs md:text-sm text-gray-600">Online Sales</p>
+              <p className="text-lg md:text-2xl font-bold text-purple-600">{onlineSales.length}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Sales History Table */}
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale ID</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {salesHistory.map((sale) => (
+                <tr key={sale.id} className="hover:bg-gray-50">
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">
+                    #{sale.id}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">{sale.date}</td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">{sale.time}</td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    <div className="flex items-center">
+                      <UserIcon size={14} className="text-gray-400 mr-2" />
+                      {sale.customerName}
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    <div className="flex items-center">
+                      <Phone size={14} className="text-gray-400 mr-2" />
+                      {sale.customerPhone}
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 text-xs md:text-sm text-gray-900">
+                    {sale.items.map((item, index) => (
+                      <div key={item.id}>
+                        {item.name} ({item.type}) x{item.quantity}
+                        {index < sale.items.length - 1 && ", "}
+                      </div>
+                    ))}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm">
+                    <span
+                      className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
+                        sale.paymentType === "cash" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {sale.paymentType === "cash" ? (
+                        <Banknote size={12} className="mr-1" />
+                      ) : (
+                        <CreditCard size={12} className="mr-1" />
+                      )}
+                      {sale.paymentType}
+                    </span>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-semibold text-gray-900">
+                    ₹{sale.total.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// Add missing imports at the top
+
+// Sales Management Component
+function SalesManagement() {
+  const { isMobile } = useApp()
+  const [salesHistory] = useState<Sale[]>(() => {
+    const saved = localStorage.getItem("sales_history")
+    return saved ? JSON.parse(saved) : mockSalesHistory
+  })
+
+  const downloadCSV = () => {
+    const csvContent = [
+      ["Sale ID", "Date", "Time", "Customer", "Phone", "Items", "Payment Type", "Total", "Salesman"],
+      ...salesHistory.map((sale) => [
+        sale.id,
+        sale.date,
+        sale.time,
+        sale.customerName,
+        sale.customerPhone,
+        sale.items.map((item) => `${item.name} (${item.type}) x${item.quantity}`).join("; "),
+        sale.paymentType,
+        `₹${sale.total}`,
+        sale.salesman,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "sales_report.csv"
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  const downloadPDF = () => {
+    alert("PDF download functionality would be implemented here with a library like jsPDF")
+  }
+
+  const totalSales = salesHistory.reduce((sum, sale) => sum + sale.total, 0)
+  const averageOrder = salesHistory.length > 0 ? totalSales / salesHistory.length : 0
+  const cashSales = salesHistory.filter((sale) => sale.paymentType === "cash")
+  const onlineSales = salesHistory.filter((sale) => sale.paymentType === "online")
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Sales Management</h1>
+        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-3">
+          <Button onClick={downloadCSV} variant="secondary" size={isMobile ? "sm" : "md"}>
+            <Download size={16} className="mr-2" />
+            Download CSV
+          </Button>
+          <Button onClick={downloadPDF} variant="secondary" size={isMobile ? "sm" : "md"}>
+            <Download size={16} className="mr-2" />
+            Download PDF
+          </Button>
+        </div>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale ID</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Salesman</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {salesHistory.map((sale) => (
+                <tr key={sale.id} className="hover:bg-gray-50">
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">
+                    #{sale.id}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">{sale.date}</td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">{sale.time}</td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {sale.customerName}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {sale.customerPhone}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 text-xs md:text-sm text-gray-900">
+                    {sale.items.map((item) => `${item.name} (${item.type}) x${item.quantity}`).join(", ")}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm">
+                    <span
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        sale.paymentType === "cash" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {sale.paymentType}
+                    </span>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    ₹{sale.total}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {sale.salesman}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <Card className="p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Total Sales</h3>
+          <p className="text-2xl md:text-3xl font-bold text-green-600">₹{totalSales.toFixed(2)}</p>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Total Transactions</h3>
+          <p className="text-2xl md:text-3xl font-bold text-blue-600">{salesHistory.length}</p>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Cash Sales</h3>
+          <p className="text-2xl md:text-3xl font-bold text-orange-600">{cashSales.length}</p>
+        </Card>
+        <Card className="p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Online Sales</h3>
+          <p className="text-2xl md:text-3xl font-bold text-purple-600">{onlineSales.length}</p>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Staff Management Component
+function StaffManagement() {
+  const { isMobile } = useApp()
+  const [staff, setStaff] = useState<Staff[]>(mockStaff)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null)
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    role: "salesman",
+    salary: "",
+    qualification: "",
+    phone: "",
+    address: "",
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const staffData: Staff = {
+      id: editingStaff?.id || Date.now().toString(),
+      name: formData.name,
+      email: formData.email,
+      role: formData.role as "admin" | "salesman",
+      salary: Number.parseFloat(formData.salary),
+      qualification: formData.qualification,
+      phone: formData.phone,
+      address: formData.address,
+      joinDate: editingStaff?.joinDate || new Date().toISOString().split("T")[0],
+      lastSalaryDate: editingStaff?.lastSalaryDate || new Date().toISOString().split("T")[0],
+    }
+
+    if (editingStaff) {
+      setStaff(staff.map((s) => (s.id === editingStaff.id ? staffData : s)))
+    } else {
+      setStaff([...staff, staffData])
+    }
+
+    setIsModalOpen(false)
+    setEditingStaff(null)
+    setFormData({ name: "", email: "", role: "salesman", salary: "", qualification: "", phone: "", address: "" })
+  }
+
+  const handleEdit = (staffMember: Staff) => {
+    setEditingStaff(staffMember)
+    setFormData({
+      name: staffMember.name,
+      email: staffMember.email,
+      role: staffMember.role,
+      salary: staffMember.salary.toString(),
+      qualification: staffMember.qualification,
+      phone: staffMember.phone,
+      address: staffMember.address,
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    setStaff(staff.filter((s) => s.id !== id))
+  }
+
+  const updateSalaryDate = (id: string) => {
+    const today = new Date().toISOString().split("T")[0]
+    setStaff(staff.map((s) => (s.id === id ? { ...s, lastSalaryDate: today } : s)))
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Staff Management</h1>
+        <Button onClick={() => setIsModalOpen(true)} size={isMobile ? "sm" : "md"}>
+          <Plus size={16} className="mr-2" />
+          Add Staff Member
+        </Button>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Date</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Salary</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Qualification
+                </th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Salary</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {staff.map((member) => (
+                <tr key={member.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-xs md:text-sm font-medium text-gray-900">{member.name}</div>
+                      <div className="text-xs text-gray-500">{member.email}</div>
+                      <div className="text-xs text-gray-400 truncate">{member.address}</div>
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+                      {member.role}
+                    </span>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {member.joinDate}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    <div className="flex items-center">
+                      <DollarSign size={14} className="text-green-600 mr-1" />₹{member.salary.toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    <div className="flex items-center">
+                      <GraduationCap size={14} className="text-purple-600 mr-1" />
+                      {member.qualification}
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    {member.phone}
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900">
+                    <div className="flex items-center space-x-2">
+                      <span>{member.lastSalaryDate}</span>
+                      <Button size="sm" variant="success" onClick={() => updateSalaryDate(member.id)}>
+                        <Clock size={12} className="mr-1" />
+                        Pay
+                      </Button>
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-medium space-x-2">
+                    <button
+                      onClick={() => handleEdit(member)}
+                      className="text-blue-600 hover:text-blue-900 transition-colors duration-150"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(member.id)}
+                      className="text-red-600 hover:text-red-900 transition-colors duration-150"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingStaff(null)
+          setFormData({ name: "", email: "", role: "salesman", salary: "", qualification: "", phone: "", address: "" })
+        }}
+        title={editingStaff ? "Edit Staff Member" : "Add Staff Member"}
+        size="xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <Input
+              value={formData.name}
+              onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="salesman">Salesman</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Salary (₹)</label>
+            <Input
+              type="number"
+              value={formData.salary}
+              onChange={(e: any) => setFormData({ ...formData, salary: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
+            <Input
+              value={formData.qualification}
+              onChange={(e: any) => setFormData({ ...formData, qualification: e.target.value })}
+              placeholder="e.g., B.Pharm, M.Pharm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <Input
+              type="tel"
+              value={formData.phone}
+              onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="+91 9876543210"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <textarea
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              placeholder="Enter full address"
+              required
+            />
+          </div>
+          <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3 pt-4">
+            <Button type="submit" className="flex-1">
+              {editingStaff ? "Update" : "Add"} Staff Member
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}
+
+// Main App Component
+function App() {
+  const { user } = useAuth()
+  const { currentPage, setCurrentPage } = useApp()
+
+  // Route to appropriate page based on user role and current page
+  const renderPage = () => {
+    if (!user) {
+      if (currentPage === "/register") {
+        return <Register onPageChange={setCurrentPage} />
+      }
+      return <Login onPageChange={setCurrentPage} />
+    }
+
+    // Admin routes
+    if (user.role === "admin") {
+      switch (currentPage) {
+        case "/admin/dashboard":
+        case "/":
+          return <AdminDashboard />
+        case "/admin/medicines":
+          return <MedicineManagement />
+        case "/admin/sales":
+          return <SalesManagement />
+        case "/admin/staff":
+          return <StaffManagement />
+        case "/admin/overview":
+          return <AdminOverview />
+        default:
+          return <AdminDashboard />
+      }
+    }
+
+    // Salesman routes
+    if (user.role === "salesman") {
+      switch (currentPage) {
+        case "/salesman/sell":
+        case "/":
+          return <SalesmanSell />
+        case "/salesman/history":
+          return <SalesmanHistory />
+        default:
+          return <SalesmanSell />
+      }
+    }
+
+    // Customer routes
+    switch (currentPage) {
+      case "/":
+        return <CustomerHome />
+      case "/medicines":
+        return <MedicineCatalog />
+      case "/pinned":
+        return <PinnedComponent />
+      default:
+        return <CustomerHome />
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <main>{renderPage()}</main>
+    </div>
+  )
+}
+
+// Root Component
+export default function PharmacyPlatform() {
+  return (
+    <AuthProvider>
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </AuthProvider>
+  )
+}
